@@ -17,11 +17,11 @@ const styles = StyleSheet.create({
   },
   pinImage: {
     resizeMode: 'cover',
-    width: 20,
-    height: 20,
+    width: 30,
+    height: 30,
     //compensate to center
-    marginLeft: -10,
-    marginTop: 10,
+    marginLeft: -15,
+    marginTop: -15,
   }
 })
 
