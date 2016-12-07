@@ -8,21 +8,25 @@ import {
     StyleSheet,
 } from 'react-native';
 
+const pinWidth = 67/2,
+      pinHeight = 84/2;
+
 const styles = StyleSheet.create({
   pin:{
     width: 0,
     height: 0,
-    borderRadius: 5,
+    backgroundColor:'red',
+    // borderRadius: 5,
     position: 'absolute',
   },
   pinImage: {
-    resizeMode: 'cover',
-    width: 30,
-    height: 30,
+    // resizeMode: 'cover',
+    width: pinWidth,
+    height: pinHeight,
     //compensate to center
-    marginLeft: -15,
-    marginTop: -15,
-  }
+    left:-pinWidth/2,
+    top:-pinHeight,
+  },
 })
 
 export default class PhotoView extends Component {
