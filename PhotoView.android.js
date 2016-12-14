@@ -4,21 +4,9 @@ import {requireNativeComponent, View} from 'react-native';
 const resolveAssetSource = require('react-native/Libraries/Image/resolveAssetSource');
 
 export default class PhotoView extends Component {
+
     static propTypes = {
-        source: PropTypes.oneOfType([
-            PropTypes.shape({
-                uri: PropTypes.string
-            }),
-            // Opaque type returned by require('./image.jpg')
-            PropTypes.number
-        ]),
-        loadingIndicatorSource: PropTypes.oneOfType([
-            PropTypes.shape({
-                uri: PropTypes.string
-            }),
-            // Opaque type returned by require('./image.jpg')
-            PropTypes.number
-        ]),
+        source: PropTypes.object,
         fadeDuration: PropTypes.number,
         minimumZoomScale: PropTypes.number,
         maximumZoomScale: PropTypes.number,
@@ -35,30 +23,22 @@ export default class PhotoView extends Component {
     };
 
     render() {
-        const source = resolveAssetSource(this.props.source);
-        var loadingIndicatorSource = resolveAssetSource(this.props.loadingIndicatorSource);
+        var {pins, source, pinPress} = this.props;
+        var nativeProps = {
+            ...this.props,
+            src: source.uri,
+            pinPress: (e)=>{
+              const id = e.nativeEvent.id;
+              let pressedPin = pins.find((pin)=>{return pin.id === id});
+              this.props.pinPress(pressedPin);
+            },
+        };
 
-        if (source && source.uri === '') {
-            console.warn('source.uri should not be an empty string');
-        }
-
-        if (this.props.src) {
-            console.warn('The <PhotoView> component requires a `source` property rather than `src`.');
-        }
-
-        if (source && source.uri) {
-            var {onLoadStart, onLoad, onLoadEnd} = this.props;
-
-            var nativeProps = {
-                ...this.props,
-                shouldNotifyLoadEvents: !!(onLoadStart || onLoad || onLoadEnd),
-                src: source.uri,
-                loadingIndicatorSrc: loadingIndicatorSource ? loadingIndicatorSource.uri : null,
-            };
-
-            return <PhotoViewAndroid {...nativeProps} />
-        }
-        return null
+        return (
+          <View style={{flex:1}}>
+            <PhotoViewAndroid {...nativeProps} />
+          </View>
+        );
     }
 }
 
@@ -66,7 +46,8 @@ var cfg = {
     nativeOnly: {
         src: true,
         loadingIndicatorSrc: true,
-        shouldNotifyLoadEvents: true
+        shouldNotifyLoadEvents: true,
+        pins: true
     }
 };
 const PhotoViewAndroid = requireNativeComponent('PhotoViewAndroid', PhotoView, cfg);

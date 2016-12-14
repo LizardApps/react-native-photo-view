@@ -1,45 +1,56 @@
-import React, {Component} from 'react';
-import {
-    AppRegistry,
-    StyleSheet,
-    View,
-} from 'react-native';
-import PhotoView from 'react-native-photo-view';
+/**
+ * Sample React Native App
+ * https://github.com/facebook/react-native
+ * @flow
+ */
 
-class example extends Component {
-    render() {
-        return (
-            <View style={styles.container}>
-                <PhotoView
-                    source={{uri: 'https://facebook.github.io/react/img/logo_og.png'}}
-                    onLoad={() => console.log("onLoad called")}
-                    onTap={() => console.log("onTap called")}
-                    minimumZoomScale={0.5}
-                    maximumZoomScale={3}
-                    androidScaleType="center"
-                    style={styles.photo} />
-            </View>
-        );
-    }
+import React, { Component } from 'react';
+import {
+  AppRegistry,
+  View,
+  Dimensions,
+} from 'react-native';
+import PhotoView from './react-native-photo-view/PhotoView';
+
+const { width, height } = Dimensions.get('window');
+
+const pins = [{
+  id: 105,
+  pin_location: '0.6680338584571401,0.19389914188315505',
+  name: 'Burger King 1',
+  logo_file: 'http://42.156.33.86/images/poi_logo_file_105.jpg',
+},{
+  id: 106,
+  pin_location: '0.38584571401,0.89914188315505',
+  name: 'Burger King 2',
+  logo_file: 'http://42.156.33.86/images/poi_logo_file_105.jpg',
+},{
+  id: 107,
+  pin_location: '0.571401,0.315505',
+  name: 'Burger King 3',
+  logo_file: 'http://42.156.33.86/images/poi_logo_file_105.jpg',
+}];
+
+export default class PanZoom extends Component {
+  onPinPress(pin){
+    console.log(pin.name +" pressed");
+  }
+  render() {
+    return (
+      <View style={{flex:1, justifyContent:'center', alignItems:'center'}}>
+        <View style={{width:width, height: height, overflow: 'hidden'}}>
+          <PhotoView
+            pins={pins}
+            pinPress={this.onPinPress}
+            source={{uri: 'http://42.156.33.86/images/maps_maps_image_42.jpg'}}
+            minimumZoomScale={.5}
+            maximumZoomScale={10}
+            androidScaleType="center"
+            style={{width: width, height: height}} />
+        </View>
+      </View>
+    );
+  }
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F5FCFF',
-    },
-    photo: {
-        width: 300,
-        height: 300,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    text: {
-        backgroundColor: "transparent",
-        color: "#FFF",
-    }
-});
-
-AppRegistry.registerComponent('example', () => example);
+AppRegistry.registerComponent('PanZoom', () => PanZoom);

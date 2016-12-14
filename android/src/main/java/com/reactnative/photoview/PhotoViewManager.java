@@ -4,18 +4,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.facebook.drawee.backends.pipeline.Fresco;
-import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
-import com.facebook.drawee.drawable.ScalingUtils;
-import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableArray;
-import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -24,8 +16,6 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import javax.annotation.Nullable;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,12 +24,10 @@ import java.util.Map;
  */
 public class PhotoViewManager extends SimpleViewManager<PhotoView> {
     private static final String REACT_CLASS = "PhotoViewAndroid";
-    private PhotoView imageView;
-
-    private ResourceDrawableIdHelper mResourceDrawableIdHelper;
+    private PhotoView viewInstance;
 
     PhotoViewManager(ReactApplicationContext context) {
-        mResourceDrawableIdHelper = new ResourceDrawableIdHelper();
+
     }
 
     @Override
@@ -49,9 +37,8 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
 
     @Override
     protected PhotoView createViewInstance(ThemedReactContext reactContext) {
-        imageView = new PhotoView(reactContext);
-//        new DownloadImageTask().execute("http://42.156.33.86/images/smaller_sample.jpg");
-
+        final PhotoView imageView = new PhotoView(reactContext);
+        viewInstance = imageView;
         return imageView;
     }
 
@@ -62,8 +49,7 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
 
     @ReactProp(name = "pins")
     public void setPins(PhotoView view, @Nullable ReadableArray source) {
-//        new DownloadImageTask().execute(source);
-        imageView.setPins(source);
+        view.setPins(source);
     }
 
     @ReactProp(name = "loadingIndicatorSrc")
@@ -103,52 +89,20 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
 
     @ReactProp(name = "androidScaleType")
     public void setScaleType(PhotoView view, String scaleType) {
-//        ScalingUtils.ScaleType value = ScalingUtils.ScaleType.CENTER;
-//
-//        switch (scaleType) {
-//            case "center":
-//                value = ScalingUtils.ScaleType.CENTER;
-//                break;
-//            case "centerCrop":
-//                value = ScalingUtils.ScaleType.CENTER_CROP;
-//                break;
-//            case "centerInside":
-//                value = ScalingUtils.ScaleType.CENTER_INSIDE;
-//                break;
-//            case "fitCenter":
-//                value = ScalingUtils.ScaleType.FIT_CENTER;
-//                break;
-//            case "fitStart":
-//                value = ScalingUtils.ScaleType.FIT_START;
-//                break;
-//            case "fitEnd":
-//                value = ScalingUtils.ScaleType.FIT_END;
-//                break;
-//            case "fitXY":
-//                value = ScalingUtils.ScaleType.FIT_XY;
-//                break;
-//        }
-//        GenericDraweeHierarchy hierarchy = view.getHierarchy();
-//        hierarchy.setActualImageScaleType(value);
+
     }
 
     @Override
     public @Nullable
     Map getExportedCustomDirectEventTypeConstants() {
         return MapBuilder.of(
-                ImageEvent.eventNameForType(ImageEvent.ON_LOAD_START), MapBuilder.of("registrationName", "onLoadStart"),
-                ImageEvent.eventNameForType(ImageEvent.ON_LOAD), MapBuilder.of("registrationName", "onLoad"),
-                ImageEvent.eventNameForType(ImageEvent.ON_LOAD_END), MapBuilder.of("registrationName", "onLoadEnd"),
-                ImageEvent.eventNameForType(ImageEvent.ON_TAP), MapBuilder.of("registrationName", "onTap"),
-                ImageEvent.eventNameForType(ImageEvent.ON_VIEW_TAP), MapBuilder.of("registrationName", "onViewTap"),
-                ImageEvent.eventNameForType(ImageEvent.ON_SCALE), MapBuilder.of("registrationName", "onScale")
+                ImageEvent.eventNameForType(ImageEvent.ON_PIN), MapBuilder.of("registrationName", "pinPress")
         );
     }
 
     @Override
     protected void onAfterUpdateTransaction(PhotoView view) {
         super.onAfterUpdateTransaction(view);
-//        view.maybeUpdateView(Fresco.newDraweeControllerBuilder());
     }
 
 
@@ -167,7 +121,7 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
         }
 
         protected void onPostExecute(Bitmap result) {
-            imageView.setImage(ImageSource.bitmap(result));
+            viewInstance.setImage(ImageSource.bitmap(result));
         }
     }
 }

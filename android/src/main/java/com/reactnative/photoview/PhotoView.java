@@ -9,10 +9,17 @@ import android.graphics.PointF;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
 
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.uimanager.UIManagerModule;
+import com.facebook.react.uimanager.events.EventDispatcher;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -35,6 +42,7 @@ public class PhotoView extends SubsamplingScaleImageView {
         for (int i = 0; i < source.size(); i++){
             ReadableMap map = source.getMap(i);
             MarkerPin mp = new MarkerPin();
+            mp.id = map.getInt("id");
             mp.name = map.getString("name");
             mp.url = map.getString("logo_file");
             String[] location = map.getString("pin_location").split(",");
@@ -58,9 +66,38 @@ public class PhotoView extends SubsamplingScaleImageView {
             MarkerPin sp = oPin.get(i);
             sp.point.set(sp.point.x*getSWidth(), sp.point.y*getSHeight());
             sPin.add(sp);
-            if(sp.icon != null)
+            if(sp.icon != null) {
                 invalidate();
+            }
         }
+
+        final EventDispatcher eventDispatcher = ((ReactContext) getContext())
+                .getNativeModule(UIManagerModule.class).getEventDispatcher();
+
+        setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent e) {
+                PointF sCoord = viewToSourceCoord(e.getX(), e.getY());
+                for(int i = 0; i < sPin.size(); i++) {
+                    MarkerPin pin = sPin.get(i);
+                    PointF pCoord = pin.point;
+
+                    float pWidth = pin.icon.getWidth();
+                    float pHeight = pin.icon.getHeight();
+
+                    if (sCoord.x > pCoord.x - (pWidth / 2) && sCoord.x < pCoord.x + (pWidth / 2) &&
+                            sCoord.y > pCoord.y - pHeight && sCoord.y < pCoord.y) {
+                        Log.d("YEah!", "clicked pin!");
+                        WritableMap pinmap = Arguments.createMap();
+                        pinmap.putInt("id", pin.id);
+                        eventDispatcher.dispatchEvent(
+                                new ImageEvent(getId(), ImageEvent.ON_PIN).setExtras(pinmap)
+                        );
+                    }
+                }
+                return false;
+            }
+        });
     }
 
     @Override
@@ -80,7 +117,6 @@ public class PhotoView extends SubsamplingScaleImageView {
                 MarkerPin mp = sPin.get(i);
                 if(mp.icon != null) {
                     PointF vPin = sourceToViewCoord(mp.point);
-                    Log.d("pins", vPin.toString());
                     float vX = vPin.x - (mp.icon.getWidth() / 2);
                     float vY = vPin.y - mp.icon.getHeight();
                     canvas.drawBitmap(mp.icon, vX, vY, paint);
@@ -93,6 +129,7 @@ public class PhotoView extends SubsamplingScaleImageView {
     }
 
     class MarkerPin{
+        public int id;
         public String name;
         public PointF point;
         public String url;
