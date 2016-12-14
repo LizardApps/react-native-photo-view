@@ -14,32 +14,11 @@ import PhotoView from 'react-native-photo-view';
 
 Basics:
 ```javascript
-const pins = [{
-  id: 105,
-  pin_location: '0.6680338584571401,0.19389914188315505',
-  name: 'pin1',
-  logo_file: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=wavatar&f=y',
-},{
-  id: 106,
-  pin_location: '0.38584571401,0.89914188315505',
-  name: 'pin2',
-  logo_file: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=retro&f=y',
-},{
-  id: 107,
-  pin_location: '0.571401,0.315505',
-  name: 'pin3',
-  logo_file: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=monsterid&f=y',
-}];
-
-...
-
 <PhotoView
-  pins={pins}
   source={{uri: 'https://facebook.github.io/react/img/logo_og.png'}}
   minimumZoomScale={0.5}
   maximumZoomScale={3}
   androidScaleType="center"
-  pinPress={(pin) => console.log(pin)}
   onLoad={() => console.log("Image loaded!")}
   style={{width: 300, height: 300}} />
 ```
@@ -48,7 +27,6 @@ const pins = [{
 
 | Property | Type | Description |
 |-----------------|----------|--------------------------------------------------------------|
-| pins | Array | list of objects with minimum id, relative location and image  |
 | source | Object | same as source for other React images |
 | loadingIndicatorSource | Object | source for loading indicator |
 | fadeDuration | int | duration of image fade (in ms) |
@@ -57,7 +35,6 @@ const pins = [{
 | scale | float | Set zoom scale programmatically |
 androidZoomTransitionDuration | int | **Android only**: Double-tap zoom transition duration |
 | androidScaleType | String | **Android only**: One of the default *Android* scale types: "center", "centerCrop", "centerInside", "fitCenter", "fitStart", "fitEnd", "fitXY" |
-| pinPress | func | Callback function taking the pressed pin as an argument |
 | onLoadStart | func | Callback function |
 | onLoad | func | Callback function |
 | onLoadEnd | func | Callback function |
