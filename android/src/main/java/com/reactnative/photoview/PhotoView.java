@@ -1,207 +1,128 @@
 package com.reactnative.photoview;
 
 import android.content.Context;
-import android.graphics.drawable.Animatable;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.view.View;
-import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
-import com.facebook.drawee.controller.BaseControllerListener;
-import com.facebook.drawee.controller.ControllerListener;
-import com.facebook.drawee.drawable.AutoRotateDrawable;
-import com.facebook.drawee.drawable.ScalingUtils;
-import com.facebook.drawee.generic.GenericDraweeHierarchy;
-import com.facebook.imagepipeline.image.ImageInfo;
-import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReactContext;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.common.SystemClock;
-import com.facebook.react.uimanager.UIManagerModule;
-import com.facebook.react.uimanager.events.EventDispatcher;
-import me.relex.photodraweeview.OnPhotoTapListener;
-import me.relex.photodraweeview.OnScaleChangeListener;
-import me.relex.photodraweeview.OnViewTapListener;
-import me.relex.photodraweeview.PhotoDraweeView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.os.AsyncTask;
+import android.util.AttributeSet;
+import android.util.Log;
 
-import javax.annotation.Nullable;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMap;
 
-import static com.facebook.react.views.image.ReactImageView.REMOTE_IMAGE_FADE_DURATION_MS;
+import java.io.InputStream;
+import java.util.ArrayList;
 
-/**
- * @author alwx (https://github.com/alwx)
- * @version 1.0
- */
-public class PhotoView extends PhotoDraweeView {
-    private Uri mUri;
-    private boolean mIsDirty;
-    private boolean mIsLocalImage;
-    private Drawable mLoadingImageDrawable;
-    private PipelineDraweeControllerBuilder mDraweeControllerBuilder;
-    private int mFadeDurationMs = -1;
-    private ControllerListener mControllerListener;
+public class PhotoView extends SubsamplingScaleImageView {
+    private ArrayList<MarkerPin> oPin;
+    private ArrayList<MarkerPin> sPin;
 
     public PhotoView(Context context) {
-        super(context);
+        this(context, null);
     }
 
-    public void setSource(@Nullable String source,
-                          @NonNull ResourceDrawableIdHelper resourceDrawableIdHelper) {
-        mUri = null;
-        if (source != null) {
-            try {
-                mUri = Uri.parse(source);
-                // Verify scheme is set, so that relative uri (used by static resources) are not handled.
-                if (mUri.getScheme() == null) {
-                    mUri = null;
-                }
-            } catch (Exception e) {
-                // ignore malformed uri, then attempt to extract resource ID.
-            }
-            if (mUri == null) {
-                mUri = resourceDrawableIdHelper.getResourceDrawableUri(getContext(), source);
-                mIsLocalImage = true;
-            } else {
-                mIsLocalImage = false;
-            }
+    public PhotoView(Context context, AttributeSet attr) {
+        super(context, attr);
+        oPin = new ArrayList<MarkerPin>();
+        sPin = new ArrayList<MarkerPin>();
+    }
+
+    public void setPins(ReadableArray source){
+        for (int i = 0; i < source.size(); i++){
+            ReadableMap map = source.getMap(i);
+            MarkerPin mp = new MarkerPin();
+            mp.name = map.getString("name");
+            mp.url = map.getString("logo_file");
+            String[] location = map.getString("pin_location").split(",");
+
+            mp.point = new PointF(
+                    Float.parseFloat(location[0]),
+                    Float.parseFloat(location[1])
+            );
+
+            oPin.add(mp);
+
+            new DownloadImageTask().execute(mp);
         }
-        mIsDirty = true;
     }
 
-    public void setLoadingIndicatorSource(@Nullable String name,
-                                          ResourceDrawableIdHelper resourceDrawableIdHelper) {
-        Drawable drawable = resourceDrawableIdHelper.getResourceDrawable(getContext(), name);
-        mLoadingImageDrawable =
-                drawable != null ? (Drawable) new AutoRotateDrawable(drawable, 1000) : null;
-        mIsDirty = true;
-    }
+    @Override
+    protected void onImageLoaded() {
+        super.onImageLoaded();
 
-    public void setFadeDuration(int durationMs) {
-        mFadeDurationMs = durationMs;
-        // no worth marking as dirty if it already rendered..
-    }
-
-    public void setShouldNotifyLoadEvents(boolean shouldNotify) {
-        if (!shouldNotify) {
-            mControllerListener = null;
-        } else {
-            final EventDispatcher eventDispatcher = ((ReactContext) getContext())
-                    .getNativeModule(UIManagerModule.class).getEventDispatcher();
-            mControllerListener = new BaseControllerListener<ImageInfo>() {
-                @Override
-                public void onSubmit(String id, Object callerContext) {
-                    eventDispatcher.dispatchEvent(
-                            new ImageEvent(getId(), ImageEvent.ON_LOAD_START)
-                    );
-                }
-
-                @Override
-                public void onFinalImageSet(
-                        String id,
-                        @Nullable final ImageInfo imageInfo,
-                        @Nullable Animatable animatable) {
-                    if (imageInfo != null) {
-                        eventDispatcher.dispatchEvent(
-                                new ImageEvent(getId(), ImageEvent.ON_LOAD)
-                        );
-                        eventDispatcher.dispatchEvent(
-                                new ImageEvent(getId(), ImageEvent.ON_LOAD_END)
-                        );
-                        update(imageInfo.getWidth(), imageInfo.getHeight());
-                    }
-                }
-
-                @Override
-                public void onFailure(String id, Throwable throwable) {
-                    eventDispatcher.dispatchEvent(
-                            new ImageEvent(getId(), ImageEvent.ON_ERROR)
-                    );
-                    eventDispatcher.dispatchEvent(
-                            new ImageEvent(getId(), ImageEvent.ON_LOAD_END)
-                    );
-                }
-            };
+        for (int i = 0; i < oPin.size(); i++){
+            MarkerPin sp = oPin.get(i);
+            sp.point.set(sp.point.x*getSWidth(), sp.point.y*getSHeight());
+            sPin.add(sp);
+            if(sp.icon != null)
+                invalidate();
         }
-        mIsDirty = true;
     }
 
-    public void maybeUpdateView(@NonNull PipelineDraweeControllerBuilder builder) {
-        if (!mIsDirty) {
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        // Don't draw pin before image is ready so it doesn't move around during setup.
+        if (!isReady()) {
             return;
         }
 
-        GenericDraweeHierarchy hierarchy = getHierarchy();
-        if (mLoadingImageDrawable != null) {
-            hierarchy.setPlaceholderImage(mLoadingImageDrawable, ScalingUtils.ScaleType.CENTER);
-        }
-        hierarchy.setFadeDuration(
-                mFadeDurationMs >= 0
-                        ? mFadeDurationMs
-                        : mIsLocalImage ? 0 : REMOTE_IMAGE_FADE_DURATION_MS);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
 
-        mDraweeControllerBuilder = builder;
-        mDraweeControllerBuilder.setUri(mUri);
-        mDraweeControllerBuilder.setOldController(getController());
-        mDraweeControllerBuilder.setControllerListener(new BaseControllerListener<ImageInfo>() {
-            @Override
-            public void onFinalImageSet(String id, ImageInfo imageInfo, Animatable animatable) {
-                super.onFinalImageSet(id, imageInfo, animatable);
-                if (imageInfo == null) {
-                    return;
+        if (sPin != null) {
+            for (int i = 0; i < sPin.size(); i++) {
+                MarkerPin mp = sPin.get(i);
+                if(mp.icon != null) {
+                    PointF vPin = sourceToViewCoord(mp.point);
+                    Log.d("pins", vPin.toString());
+                    float vX = vPin.x - (mp.icon.getWidth() / 2);
+                    float vY = vPin.y - mp.icon.getHeight();
+                    canvas.drawBitmap(mp.icon, vX, vY, paint);
                 }
-                update(imageInfo.getWidth(), imageInfo.getHeight());
             }
-        });
-
-        if (mControllerListener != null) {
-            mDraweeControllerBuilder.setControllerListener(mControllerListener);
+        }else{
+            Log.i("INFO","no pins??");
         }
 
-        setController(mDraweeControllerBuilder.build());
-        setViewCallbacks();
-
-        mIsDirty = false;
     }
 
-    private void setViewCallbacks() {
-        final EventDispatcher eventDispatcher = ((ReactContext) getContext())
-                .getNativeModule(UIManagerModule.class).getEventDispatcher();
+    class MarkerPin{
+        public String name;
+        public PointF point;
+        public String url;
+        public Bitmap icon;
+    }
 
-        setOnPhotoTapListener(new OnPhotoTapListener() {
-            @Override
-            public void onPhotoTap(View view, float x, float y) {
-                WritableMap scaleChange = Arguments.createMap();
-                scaleChange.putDouble("x", x);
-                scaleChange.putDouble("y", y);
-                eventDispatcher.dispatchEvent(
-                        new ImageEvent(getId(), ImageEvent.ON_TAP).setExtras(scaleChange)
-                );
+    class DownloadImageTask extends AsyncTask<MarkerPin, Void, Bitmap> {
+        public MarkerPin pin;
+        protected Bitmap doInBackground(MarkerPin... pins) {
+            pin = pins[0];
+            String urldisplay = pin.url;
+            Bitmap icon = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                icon = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
             }
-        });
 
-        setOnScaleChangeListener(new OnScaleChangeListener() {
-            @Override
-            public void onScaleChange(float scaleFactor, float focusX, float focusY) {
-                WritableMap scaleChange = Arguments.createMap();
-                scaleChange.putDouble("scaleFactor", scaleFactor);
-                scaleChange.putDouble("focusX", focusX);
-                scaleChange.putDouble("focusY", focusY);
-                eventDispatcher.dispatchEvent(
-                        new ImageEvent(getId(), ImageEvent.ON_SCALE).setExtras(scaleChange)
-                );
-            }
-        });
+            return icon;
+        }
 
-        setOnViewTapListener(new OnViewTapListener() {
-            @Override
-            public void onViewTap(View view, float x, float y) {
-                WritableMap scaleChange = Arguments.createMap();
-                scaleChange.putDouble("x", x);
-                scaleChange.putDouble("y", y);
-                eventDispatcher.dispatchEvent(
-                        new ImageEvent(getId(), ImageEvent.ON_TAP).setExtras(scaleChange)
-                );
-            }
-        });
+        protected void onPostExecute(Bitmap result) {
+            float density = getResources().getDisplayMetrics().densityDpi;
+            float w = (density/420f) * result.getWidth();
+            float h = (density/420f) * result.getHeight();
+            result = Bitmap.createScaledBitmap(result, (int)w, (int)h, true);
+            pin.icon = result;
+            invalidate();
+        }
     }
 }

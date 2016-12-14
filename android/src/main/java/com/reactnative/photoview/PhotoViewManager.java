@@ -1,17 +1,31 @@
 package com.reactnative.photoview;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+
+import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
 import com.facebook.drawee.drawable.ScalingUtils;
 import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 
 import javax.annotation.Nullable;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,6 +34,7 @@ import java.util.Map;
  */
 public class PhotoViewManager extends SimpleViewManager<PhotoView> {
     private static final String REACT_CLASS = "PhotoViewAndroid";
+    private PhotoView imageView;
 
     private ResourceDrawableIdHelper mResourceDrawableIdHelper;
 
@@ -34,78 +49,87 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
 
     @Override
     protected PhotoView createViewInstance(ThemedReactContext reactContext) {
-        return new PhotoView(reactContext);
+        imageView = new PhotoView(reactContext);
+//        new DownloadImageTask().execute("http://42.156.33.86/images/smaller_sample.jpg");
+
+        return imageView;
     }
 
     @ReactProp(name = "src")
     public void setSource(PhotoView view, @Nullable String source) {
-        view.setSource(source, mResourceDrawableIdHelper);
+        new DownloadImageTask().execute(source);
+    }
+
+    @ReactProp(name = "pins")
+    public void setPins(PhotoView view, @Nullable ReadableArray source) {
+//        new DownloadImageTask().execute(source);
+        imageView.setPins(source);
     }
 
     @ReactProp(name = "loadingIndicatorSrc")
     public void setLoadingIndicatorSource(PhotoView view, @Nullable String source) {
-        view.setLoadingIndicatorSource(source, mResourceDrawableIdHelper);
+//        view.setLoadingIndicatorSource(source, mResourceDrawableIdHelper);
     }
 
     @ReactProp(name = "fadeDuration")
     public void setFadeDuration(PhotoView view, int durationMs) {
-        view.setFadeDuration(durationMs);
+//        view.setFadeDuration(durationMs);
     }
 
     @ReactProp(name = "shouldNotifyLoadEvents")
     public void setLoadHandlersRegistered(PhotoView view, boolean shouldNotifyLoadEvents) {
-        view.setShouldNotifyLoadEvents(shouldNotifyLoadEvents);
+//        view.setShouldNotifyLoadEvents(shouldNotifyLoadEvents);
     }
 
     @ReactProp(name = "minimumZoomScale")
     public void setMinimumZoomScale(PhotoView view, float minimumZoomScale) {
-        view.setMinimumScale(minimumZoomScale);
+//        view.setMinimumScale(minimumZoomScale);
     }
 
     @ReactProp(name = "maximumZoomScale")
     public void setMaximumZoomScale(PhotoView view, float maximumZoomScale) {
-        view.setMaximumScale(maximumZoomScale);
+//        view.setMaximumScale(maximumZoomScale);
     }
 
     @ReactProp(name = "scale")
     public void setScale(PhotoView view, float scale) {
-        view.setScale(scale, true);
+//        view.setScale(scale, true);
     }
 
     @ReactProp(name = "androidZoomTransitionDuration")
     public void setScale(PhotoView view, int durationMs) {
-        view.setZoomTransitionDuration(durationMs);
+//        view.setZoomTransitionDuration(durationMs);
     }
 
     @ReactProp(name = "androidScaleType")
     public void setScaleType(PhotoView view, String scaleType) {
-        ScalingUtils.ScaleType value = ScalingUtils.ScaleType.CENTER;
-
-        switch (scaleType) {
-            case "center":
-                value = ScalingUtils.ScaleType.CENTER;
-                break;
-            case "centerCrop":
-                value = ScalingUtils.ScaleType.CENTER_CROP;
-                break;
-            case "centerInside":
-                value = ScalingUtils.ScaleType.CENTER_INSIDE;
-                break;
-            case "fitCenter":
-                value = ScalingUtils.ScaleType.FIT_CENTER;
-                break;
-            case "fitStart":
-                value = ScalingUtils.ScaleType.FIT_START;
-                break;
-            case "fitEnd":
-                value = ScalingUtils.ScaleType.FIT_END;
-                break;
-            case "fitXY":
-                value = ScalingUtils.ScaleType.FIT_XY;
-                break;
-        }
-        GenericDraweeHierarchy hierarchy = view.getHierarchy();
-        hierarchy.setActualImageScaleType(value);
+//        ScalingUtils.ScaleType value = ScalingUtils.ScaleType.CENTER;
+//
+//        switch (scaleType) {
+//            case "center":
+//                value = ScalingUtils.ScaleType.CENTER;
+//                break;
+//            case "centerCrop":
+//                value = ScalingUtils.ScaleType.CENTER_CROP;
+//                break;
+//            case "centerInside":
+//                value = ScalingUtils.ScaleType.CENTER_INSIDE;
+//                break;
+//            case "fitCenter":
+//                value = ScalingUtils.ScaleType.FIT_CENTER;
+//                break;
+//            case "fitStart":
+//                value = ScalingUtils.ScaleType.FIT_START;
+//                break;
+//            case "fitEnd":
+//                value = ScalingUtils.ScaleType.FIT_END;
+//                break;
+//            case "fitXY":
+//                value = ScalingUtils.ScaleType.FIT_XY;
+//                break;
+//        }
+//        GenericDraweeHierarchy hierarchy = view.getHierarchy();
+//        hierarchy.setActualImageScaleType(value);
     }
 
     @Override
@@ -124,6 +148,26 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
     @Override
     protected void onAfterUpdateTransaction(PhotoView view) {
         super.onAfterUpdateTransaction(view);
-        view.maybeUpdateView(Fresco.newDraweeControllerBuilder());
+//        view.maybeUpdateView(Fresco.newDraweeControllerBuilder());
+    }
+
+
+    class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        protected Bitmap doInBackground(String... urls) {
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            imageView.setImage(ImageSource.bitmap(result));
+        }
     }
 }

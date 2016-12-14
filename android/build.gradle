@@ -37,4 +37,5 @@ dependencies {
     compile 'com.facebook.react:react-native:+'
     compile 'com.facebook.fresco:fresco:0.11.0'
     compile 'me.relex:photodraweeview:1.0.0'
+    compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.6.0'
 }
