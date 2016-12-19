@@ -96,7 +96,8 @@ public class PhotoViewManager extends SimpleViewManager<PhotoView> {
     public @Nullable
     Map getExportedCustomDirectEventTypeConstants() {
         return MapBuilder.of(
-                ImageEvent.eventNameForType(ImageEvent.ON_PIN), MapBuilder.of("registrationName", "pinPress")
+                ImageEvent.eventNameForType(ImageEvent.ON_PIN), MapBuilder.of("registrationName", "pinPress"),
+                ImageEvent.eventNameForType(ImageEvent.ON_LOAD_END), MapBuilder.of("registrationName", "onLoadEnd")
         );
     }
 

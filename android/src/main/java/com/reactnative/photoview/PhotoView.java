@@ -71,6 +71,17 @@ public class PhotoView extends SubsamplingScaleImageView {
             }
         }
 
+        resetPins();
+
+        final EventDispatcher eventDispatcher = ((ReactContext) getContext())
+                .getNativeModule(UIManagerModule.class).getEventDispatcher();
+
+        eventDispatcher.dispatchEvent(
+                new ImageEvent(getId(), ImageEvent.ON_LOAD_END)
+        );
+    }
+
+    protected void resetPins(){
         final EventDispatcher eventDispatcher = ((ReactContext) getContext())
                 .getNativeModule(UIManagerModule.class).getEventDispatcher();
 
@@ -98,6 +109,7 @@ public class PhotoView extends SubsamplingScaleImageView {
                 return false;
             }
         });
+
     }
 
     @Override
